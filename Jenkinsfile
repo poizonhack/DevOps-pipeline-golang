@@ -1,7 +1,7 @@
 pipeline {
    agent any
    environment {
-       registry = "magalixcorp/k8scicd"
+       registry = "poizonhack/devops-img"
        GOCACHE = "/tmp"
    }
    stages {
@@ -46,7 +46,7 @@ pipeline {
            steps{
                script {
                    def appimage = docker.build registry + ":$BUILD_NUMBER"
-                   docker.withRegistry( '', registryCredential ) {
+                   docker.withRegistry('https://registry.hub.docker.com', registryCredential ) {
                        appimage.push()
                        appimage.push('latest')
                    }
