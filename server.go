@@ -12,7 +12,7 @@ import (
 
 
 
-// PlayerServer currently returns Hello, world given _any_ request.
+// PlayerServer currently returns Hello Devops, world given _any_ request.
 
 func PlayerServer(w http.ResponseWriter, r *http.Request) {
 
