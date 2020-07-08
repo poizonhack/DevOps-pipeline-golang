@@ -14,9 +14,9 @@ pipeline {
            steps {
                // Create our project directory.
                sh 'cd ${GOPATH}/src'
-               sh 'mkdir -p ${GOPATH}/src/hello-world'
+               sh 'mkdir -p ${GOPATH}/src/hello-devops'
                // Copy all files in our Jenkins workspace to our project directory.               
-               sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-world'
+               sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-devops'
                // Build the app.
                sh 'go build'              
            }    
@@ -30,9 +30,9 @@ pipeline {
            steps {                
                // Create our project directory.
                sh 'cd ${GOPATH}/src'
-               sh 'mkdir -p ${GOPATH}/src/hello-world'
+               sh 'mkdir -p ${GOPATH}/src/hello-devops'
                // Copy all files in our Jenkins workspace to our project directory.               
-               sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-world'
+               sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-devops'
                // Remove cached test results.
                sh 'go clean -cache'
                // Run Unit Tests.
