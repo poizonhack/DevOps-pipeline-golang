@@ -46,6 +46,7 @@ pipeline {
            steps{
                script {
                     def appimage = docker.build registry + ":$BUILD_NUMBER"
+                  sh ' echo ${appimage}'
                   stage('Scan Image'){
                     sh '''
                        docker run -d --name db arminc/clair-db
