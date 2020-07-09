@@ -39,7 +39,7 @@ pipeline {
                sh 'go test ./... -v -short'           
            }
        }
-       stage('Publish') {
+       stage('Scan & Publish Image') {
            environment {
                registryCredential = 'docker-hub_id'
            }
