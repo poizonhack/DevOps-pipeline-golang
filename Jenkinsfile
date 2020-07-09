@@ -46,13 +46,15 @@ pipeline {
            steps{
                script {
                     def appimage = docker.build registry + ":$BUILD_NUMBER"
-                    docker.image('nordri/clair-scanner').inside('--net ci') {
                     sh '''
-                      IP=$(ip r | tail -n1 | awk '{ print $9 }')
-                      /clair-scanner --ip ${IP} --clair=http://clair:6060 --threshold="Critical" appimage
-                       '''
-       
-                     }
+                       docker run -d --name db arminc/clair-db
+                       sleep 15 # wait for db to come up
+                       docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan
+                       sleep 1
+                       DOCKER_GATEWAY=$(docker network inspect bridge --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}")
+                       wget -qO clair-scanner https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner
+                       ./clair-scanner --ip="$DOCKER_GATEWAY" appimage || exit 0
+                     '''
                    docker.withRegistry('https://registry.hub.docker.com', registryCredential ) {
                        appimage.push()
                        appimage.push('latest')
