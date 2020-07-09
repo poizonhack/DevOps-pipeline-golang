@@ -45,7 +45,14 @@ pipeline {
            }
            steps{
                script {
-                   def appimage = docker.build registry + ":$BUILD_NUMBER"
+                    def appimage = docker.build registry + ":$BUILD_NUMBER"
+                    docker.image('nordri/clair-scanner').inside('--net ci') {
+                    sh '''
+                      IP=$(ip r | tail -n1 | awk '{ print $9 }')
+                      /clair-scanner --ip ${IP} --clair=http://clair:6060 --threshold="Critical" appimage
+                       '''
+       
+                     }
                    docker.withRegistry('https://registry.hub.docker.com', registryCredential ) {
                        appimage.push()
                        appimage.push('latest')
