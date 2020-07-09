@@ -39,13 +39,14 @@ pipeline {
                sh 'go test ./... -v -short'           
            }
        }
-       stage('Scan & Publish Image') {
+       stage('Publish Image') {
            environment {
                registryCredential = 'docker-hub_id'
            }
            steps{
                script {
                     def appimage = docker.build registry + ":$BUILD_NUMBER"
+                  stage('Scan Image'){
                     sh '''
                        docker run -d --name db arminc/clair-db
                        sleep 15 # wait for db to come up
@@ -55,6 +56,7 @@ pipeline {
                        wget -qO clair-scanner https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner
                        ./clair-scanner --ip="$DOCKER_GATEWAY" appimage || exit 0
                      '''
+                     }
                    docker.withRegistry('https://registry.hub.docker.com', registryCredential ) {
                        appimage.push()
                        appimage.push('latest')
