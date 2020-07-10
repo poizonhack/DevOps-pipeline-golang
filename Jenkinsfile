@@ -47,13 +47,13 @@ pipeline {
                script {
                     def appimage = docker.build registry + ":$BUILD_NUMBER"
                  
-                  stage('Scan Image'){
-                    sh '''
-                        docker run -d --name db arminc/clair-db:latest
-                        docker run -d --link db:postgres --name clair arminc/clair-local-scan:v2.0.6
-                        docker run --rm  -v /var/run/docker.sock:/var/run/docker.sock --network=container:clair ovotech/clair-scanner clair-scanner poizonhack/devops-img:$BUILD_NUMBER
-                     '''
-                     }
+                  //stage('Scan Image'){
+                   // sh '''
+                     //   docker run -d --name db arminc/clair-db:latest
+                      //  docker run -d --link db:postgres --name clair arminc/clair-local-scan:v2.0.6
+                       // docker run --rm  -v /var/run/docker.sock:/var/run/docker.sock --network=container:clair ovotech/clair-scanner clair-scanner poizonhack/devops-img:$BUILD_NUMBER
+                     //'''
+                     //}
                    docker.withRegistry('https://registry.hub.docker.com', registryCredential ) {
                        appimage.push()
                        appimage.push('latest')
