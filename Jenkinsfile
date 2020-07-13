@@ -70,7 +70,7 @@ pipeline {
             // sh 'kubectl --token $api_token --server https://192.168.99.102:8443 --insecure-skip-tls-verify=true --validate=false apply -f playbook.yaml'
              script{
                    def image_id = registry + ":$BUILD_NUMBER"
-                   sh "ansible-playbook  playbook.yaml --extra-vars \"image_id=${image_id}\""
+                   sh "ansible-playbook hosts.yaml playbook.yaml --extra-vars \"image_id=${image_id}\""
                }
                }
             }
