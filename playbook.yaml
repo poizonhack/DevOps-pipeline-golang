@@ -6,10 +6,10 @@
       pip:
         name: docker
     
-    - name: Stop the old container
-      docker_container:
-        name: devops_app
-        state: stopped
+  #  - name: Stop the old container
+   #   docker_container:
+    #    name: devops_app
+      #  state: stopped
 
     - name: Prune everything (including non-dangling images)
       docker_prune:
