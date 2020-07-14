@@ -1,15 +1,11 @@
-FROM golang:alpine AS build-env
-RUN mkdir /go/src/app && apk update && apk add git
-ADD main.go server.go /go/src/app/
-
+FROM golang:1.14
 
 WORKDIR /go/src/app
+COPY ./*.go ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o app .
+RUN go get -d -v ./...
+RUN go install -v ./...
 
-FROM scratch
+EXPOSE 5000
 
-WORKDIR /app
-
-COPY --from=build-env /go/src/app/app .
-ENTRYPOINT [ "./app" ]
+CMD ["app"]
