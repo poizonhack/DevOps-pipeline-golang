@@ -52,7 +52,7 @@ pipeline {
         
         stage('Docker build') {
             environment {
-                registryCredential = 'my-docker-credentials-id'
+                registryCredential = 'docker-hub_id'
             }
             steps{
                 script {
