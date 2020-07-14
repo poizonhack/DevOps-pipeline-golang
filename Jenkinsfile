@@ -59,8 +59,8 @@ pipeline {
 
                     def image = docker.build registry + ":v$BUILD_NUMBER" 
 
-                    stage('Docker scan'){
-                        sh '''
+                    //stage('Docker scan'){
+                       // sh '''
                         //docker run -d --name db arminc/clair-db
                         //sleep 15 # wait for db to come up
                         //docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan
@@ -68,8 +68,8 @@ pipeline {
                         //DOCKER_GATEWAY=$(docker network inspect bridge --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}")
                         //wget -qO clair-scanner https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner
                         //./clair-scanner --ip="$DOCKER_GATEWAY" poizonhack/devops_img:v$BUILD_NUMBER || exit 0
-                        '''
-                    } 
+                       // '''
+                   // } 
 
                     // Use the Credential ID of the Docker Hub Credentials we added to Jenkins.
                     docker.withRegistry('', registryCredential ) {
