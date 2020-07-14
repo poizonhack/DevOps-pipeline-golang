@@ -1,79 +1,122 @@
+#!/usr/bin/env groovy
+// The above line is used to trigger correct syntax highlighting.
+
 pipeline {
-   agent any
-   environment {
-       registry = "poizonhack/devops-img"
-       GOCACHE = "/tmp"
-   }
-   stages {
-       stage('Build') {
-           agent {
-               docker {
-                   image 'golang'
-               }
-           }
-           steps {
-               // Create our project directory.
-               sh 'cd ${GOPATH}/src'
-               sh 'mkdir -p ${GOPATH}/src/hello-devops'
-               // Copy all files in our Jenkins workspace to our project directory.               
-               sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-devops'
-               // Build the app.
-               sh 'go build'              
-           }    
-       }
-       stage('Test') {
-           agent {
-               docker {
-                   image 'golang'
-               }
-           }
-           steps {                
-               // Create our project directory.
-               sh 'cd ${GOPATH}/src'
-               sh 'mkdir -p ${GOPATH}/src/hello-devops'
-               // Copy all files in our Jenkins workspace to our project directory.               
-               sh 'cp -r ${WORKSPACE}/* ${GOPATH}/src/hello-devops'
-               // Remove cached test results.
-               sh 'go clean -cache'
-               // Run Unit Tests.
-               sh 'go test ./... -v -short'           
-           }
-       }
-       stage('Publish Image') {
-           environment {
-               registryCredential = 'docker-hub_id'
-           }
-           steps{
-               script {
-                    def appimage = docker.build registry + ":$BUILD_NUMBER"
-                 
-                  //stage('Scan Image'){
-                   // sh '''
-                     //   docker run -d --name db arminc/clair-db:latest
-                      //  docker run -d --link db:postgres --name clair arminc/clair-local-scan:v2.0.6
-                       // docker run --rm  -v /var/run/docker.sock:/var/run/docker.sock --network=container:clair ovotech/clair-scanner clair-scanner poizonhack/devops-img:$BUILD_NUMBER
-                     //'''
-                     //}
-                   docker.withRegistry('https://registry.hub.docker.com', registryCredential ) {
-                       appimage.push()
-                       appimage.push('latest')
-                   }
-               }
-           }
-       }
-       stage('Deploy App') {
-    steps {
-        withCredentials([
-            string(credentialsId: 'token', variable: 'api_token')
-            ]) 
-             {
-            // sh 'kubectl --token $api_token --server https://192.168.99.102:8443 --insecure-skip-tls-verify=true --validate=false apply -f playbook.yaml'
-             script{
-                   def image_id = registry + ":$BUILD_NUMBER"
-                   sh "ansible-playbook playbook.yaml --extra-vars \"image_id=${image_id}\""
-               }
-               }
+    // Lets Jenkins use Docker for us later.
+    agent any    
+
+    environment {
+        registry = "poizonhack/devops_img"
+        GOCACHE = "/tmp"
+    }
+
+    // If anything fails, the whole Pipeline stops.
+    stages {
+        stage('Build') {   
+            // Use golang.
+            agent { docker { image 'golang' } }
+
+            steps {                                           
+                // Create our project directory.
+                sh 'cd ${GOPATH}/src'
+                sh 'mkdir -p ${GOPATH}/src/app'
+
+                // Copy all files in our Jenkins workspace to our project directory.                
+                sh 'cp -r ${WORKSPACE}/*.go ${GOPATH}/src/app'
+
+                // Build the app.
+                sh 'go build'               
+            }            
+        }
+
+        stage('Test') {
+            // Use golang.
+            agent { docker { image 'golang' } }
+
+            steps {                 
+                // Create our project directory.
+                sh 'cd ${GOPATH}/src'
+                sh 'mkdir -p ${GOPATH}/src/app'
+
+                // Copy all files in our Jenkins workspace to our project directory.
+                sh 'cp -r ${WORKSPACE}/*.go ${GOPATH}/src/app'
+
+                // Remove cached test results.
+                sh 'go clean -cache'
+
+                // Run Unit Tests.
+                sh 'go test ./... -v -short'            
             }
-           }
-   }
-}
+        }    
+
+        
+        stage('Docker build') {
+            environment {
+                registryCredential = 'my-docker-credentials-id'
+            }
+            steps{
+                script {
+
+                    def image = docker.build registry + ":v$BUILD_NUMBER" 
+
+                    stage('Docker scan'){
+                        sh '''
+                        docker run -d --name db arminc/clair-db
+                        sleep 15 # wait for db to come up
+                        docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan
+                        sleep 1
+                        DOCKER_GATEWAY=$(docker network inspect bridge --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}")
+                        wget -qO clair-scanner https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner
+                        ./clair-scanner --ip="$DOCKER_GATEWAY" poizonhack/devops_img:v$BUILD_NUMBER || exit 0
+                        '''
+                    } 
+
+                    // Use the Credential ID of the Docker Hub Credentials we added to Jenkins.
+                    docker.withRegistry('', registryCredential ) {
+
+                        // Push image and tag it with our build number for versioning purposes.
+                        image.push()
+
+                        image.push('latest')
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+
+                    def image = registry + ":v$BUILD_NUMBER"
+
+                    ansiblePlaybook(
+                        playbook: '${WORKSPACE}/playbook.yml',
+                        extraVars: [
+                            image: image
+                        ],
+                        disableHostKeyChecking: true,
+                    )
+                }
+            }
+        }
+
+        stage('Security Test') {
+            // Use gauntlt/gauntlt.
+            steps {
+                script {
+                    sh '''
+                        docker run -t --rm=true -v $(pwd):/working -w /working gauntlt/gauntlt ${WORKSPACE}/gauntlt/xss.attack
+                        '''
+                }
+            }
+        }    
+
+    }
+
+    post {
+        always {
+            // Clean up our workspace.
+            deleteDir()
+        }
+    }
+}   
