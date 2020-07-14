@@ -59,19 +59,19 @@ pipeline {
 
                     def image = docker.build registry + ":v$BUILD_NUMBER" 
 
-                    //stage('Docker scan'){
-                       // sh '''
-                        //docker run -d --name db arminc/clair-db
-                        //sleep 15 # wait for db to come up
-                        //docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan
-                        //sleep 1
-                        //DOCKER_GATEWAY=$(docker network inspect bridge --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}")
-                        //wget -qO clair-scanner https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner
-                        //./clair-scanner --ip="$DOCKER_GATEWAY" poizonhack/devops_img:v$BUILD_NUMBER || exit 0
-                        //docker stop $(docker ps -a -q)
-                        //docker rm $(docker ps -a -q)
-                       // '''
-                   // } 
+                    stage('Docker scan'){
+                        sh '''
+                        docker run -d --name db arminc/clair-db
+                        sleep 15 # wait for db to come up
+                        docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan
+                        sleep 1
+                        DOCKER_GATEWAY=$(docker network inspect bridge --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}")
+                        wget -qO clair-scanner https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner
+                        ./clair-scanner --ip="$DOCKER_GATEWAY" poizonhack/devops_img:v$BUILD_NUMBER || exit 0
+                        docker stop $(docker ps -a -q)
+                        docker rm $(docker ps -a -q)
+                        '''
+                    } 
 
                     // Use the Credential ID of the Docker Hub Credentials we added to Jenkins.
                     docker.withRegistry('', registryCredential ) {
@@ -100,18 +100,7 @@ pipeline {
                     )
                 }
             }
-        }
-
-        stage('Security Test') {
-            // Use gauntlt/gauntlt.
-            steps {
-                script {
-                    sh '''
-                        docker run -t --rm=true -v $(pwd):/working -w /working gauntlt/gauntlt ${WORKSPACE}/gauntlt/xss.attack
-                        '''
-                }
-            }
-        }    
+        }  
 
     }
 
