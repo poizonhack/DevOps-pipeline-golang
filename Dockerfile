@@ -1,4 +1,4 @@
-FROM alpine:3.12
+FROM golang:1.14
 
 WORKDIR /go/src/app
 COPY ./*.go ./
